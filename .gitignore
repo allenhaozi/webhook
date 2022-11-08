@@ -25,3 +25,7 @@ Dockerfile.cross
 *.swo
 *~
 webhook-amd64
+cert-dir/tls.crt
+cert-dir/tls.key
+cert-dir/ca.crt
+
