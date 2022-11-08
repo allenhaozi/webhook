@@ -1,0 +1,27 @@
+# permissions for end users to view metawebhooks.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: metawebhook-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: webhook
+    app.kubernetes.io/part-of: webhook
+    app.kubernetes.io/managed-by: kustomize
+  name: metawebhook-viewer-role
+rules:
+- apiGroups:
+  - meta.github.com
+  resources:
+  - metawebhooks
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - meta.github.com
+  resources:
+  - metawebhooks/status
+  verbs:
+  - get

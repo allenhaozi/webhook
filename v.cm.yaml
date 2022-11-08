@@ -1,0 +1,38 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"admissionregistration.k8s.io/v1","kind":"ValidatingWebhookConfiguration","metadata":{"annotations":{},"creationTimestamp":null,"name":"validating-webhook-configuration"},"webhooks":[{"admissionReviewVersions":["v1"],"clientConfig":{"service":{"name":"webhook-service","namespace":"default","path":"/validate-meta-github-com-v1-metawebhook"}},"failurePolicy":"Fail","name":"vmetawebhook.kb.io","rules":[{"apiGroups":["meta.github.com"],"apiVersions":["v1"],"operations":["CREATE","UPDATE"],"resources":["metawebhooks"]}],"sideEffects":"None"}]}
+  creationTimestamp: "2022-11-06T15:06:33Z"
+  generation: 1
+  name: validating-webhook-configuration
+  resourceVersion: "6318146"
+  uid: 4673e80a-e06a-4720-b5fa-2fde0f143b35
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: default
+      path: /validate-meta-github-com-v1-metawebhook
+      port: 443
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: vmetawebhook.kb.io
+  namespaceSelector: {}
+  objectSelector: {}
+  rules:
+  - apiGroups:
+    - meta.github.com
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - metawebhooks
+    scope: '*'
+  sideEffects: None
+  timeoutSeconds: 10

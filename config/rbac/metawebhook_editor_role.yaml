@@ -1,0 +1,31 @@
+# permissions for end users to edit metawebhooks.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: metawebhook-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: webhook
+    app.kubernetes.io/part-of: webhook
+    app.kubernetes.io/managed-by: kustomize
+  name: metawebhook-editor-role
+rules:
+- apiGroups:
+  - meta.github.com
+  resources:
+  - metawebhooks
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - meta.github.com
+  resources:
+  - metawebhooks/status
+  verbs:
+  - get

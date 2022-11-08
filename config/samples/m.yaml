@@ -1,0 +1,18 @@
+apiVersion: meta.github.com/v1
+kind: MetaWebHook
+metadata:
+  labels:
+    app.kubernetes.io/name: metawebhook
+    app.kubernetes.io/instance: metawebhook-sample
+    app.kubernetes.io/part-of: webhook
+    app.kuberentes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: webhook
+  name: metawebhook-sample
+spec:
+  # TODO(user): Add fields here
+  serviceType: "databaseService"
+  database: "salesforce"
+  databaseSchema: "default"
+  tableFQN: "naton"
+  tableId: "123"
+  
