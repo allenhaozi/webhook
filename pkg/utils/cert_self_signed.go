@@ -54,7 +54,7 @@ func GenerateCertAndCreate(namespaceName, serviceName, certDir string) {
 	}
 }
 
-// Source inspired by: https://github.com/kubernetes/kubernetes/blob/v1.21.1/test/e2e/apimachinery/certs.go.
+// Reference: https://github.com/kubernetes/kubernetes/blob/v1.21.1/test/e2e/apimachinery/certs.go.
 func generateCert(namespaceName, serviceName string) CertContext {
 	signingKey, err := NewPrivateKey()
 	if err != nil {
