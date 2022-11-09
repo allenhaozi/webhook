@@ -34,28 +34,29 @@ type CertContext struct {
 	SigningCert []byte
 }
 
-func GenerateCertAndCreate(namespaceName, serviceName, certDir string) {
+func GenerateCertAndCreate(namespaceName, serviceName, certDir string) (*CertContext, error) {
 	certContext := generateCert(namespaceName, serviceName)
-
 	// ca.crt
 	caCertFile := filepath.Join(certDir, "ca.crt")
 	if err := os.WriteFile(caCertFile, certContext.SigningCert, 0o644); err != nil {
-		log.Fatalf("Failed to write CA cert %v", err)
+		return nil, errors.Errorf("Failed to write CA cert %v", err)
 	}
 	// server.key
 	keyFile := filepath.Join(certDir, "tls.key")
 	if err := os.WriteFile(keyFile, certContext.Key, 0o644); err != nil {
-		log.Fatalf("Failed to write key file %v", err)
+		return nil, errors.Errorf("Failed to write key file %v", err)
 	}
 	// server.csr
 	certFile := filepath.Join(certDir, "tls.crt")
 	if err := os.WriteFile(certFile, certContext.Cert, 0o600); err != nil {
-		log.Fatalf("Failed to write cert file %v", err)
+		return nil, errors.Errorf("Failed to write cert file %v", err)
 	}
+
+	return certContext, nil
 }
 
-// Source inspired by: https://github.com/kubernetes/kubernetes/blob/v1.21.1/test/e2e/apimachinery/certs.go.
-func generateCert(namespaceName, serviceName string) CertContext {
+// reference: https://github.com/kubernetes/kubernetes/blob/v1.21.1/test/e2e/apimachinery/certs.go.
+func generateCert(namespaceName, serviceName string) *CertContext {
 	signingKey, err := NewPrivateKey()
 	if err != nil {
 		log.Fatalf("Failed to create CA private key %v", err)
@@ -95,7 +96,7 @@ func generateCert(namespaceName, serviceName string) CertContext {
 		log.Fatalf("Failed to marshal key %v", err)
 	}
 
-	c := CertContext{
+	c := &CertContext{
 		Cert:        EncodeCertPEM(signedCert),
 		Key:         keyPEM,
 		SigningCert: EncodeCertPEM(signingCert),

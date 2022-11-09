@@ -6,8 +6,8 @@ ARG TARGETOS
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 WORKDIR /
 COPY webhook-amd64 /webhook
-COPY cert-dir /cert-dir
-RUN chmod -R 0755 /cert-dir 
+
+
 USER 65532:65532
 
 ENTRYPOINT ["/webhook"]

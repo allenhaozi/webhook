@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/part-of: webhook
     app.kubernetes.io/managed-by: kustomize
   name: webhook-service
-  namespace: system
+  namespace: default
 spec:
   ports:
     - port: 443
