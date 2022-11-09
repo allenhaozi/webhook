@@ -1,4 +1,4 @@
-FROM harbor.4pd.io/openaios/alpine:3.15.0
+FROM alpine:3.15.0
 # Build the manager binary
 ARG TARGETOS
 
