@@ -20,6 +20,7 @@ import (
 	"flag"
 	"os"
 
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -28,8 +29,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/allenhaozi/webhook/api/common"
 	metav1 "github.com/allenhaozi/webhook/api/v1"
 	"github.com/allenhaozi/webhook/controllers"
+	"github.com/allenhaozi/webhook/pkg/utils"
 )
 
 var (
@@ -62,11 +65,16 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	// ns := "default"
-	// svc := "webhook-service"
-	// certDir := "/tmp/webhook/cert-dir"
-	// certDir := "/Users/mahao/go/src/github.com/allenhaozi/webhook/cert-dir"
-	certDir := "/cert-dir"
+	ns := ""
+	if v, ok := os.LookupEnv(common.MyPodNamespace); ok {
+		ns = v
+	} else {
+		err := errors.Errorf("can not get %s environment variable", common.MyPodNamespace)
+		setupLog.Error(err, "get environment failure")
+		return
+	}
+
+	certDir := "/tmp/cert-dir"
 
 	err := os.MkdirAll(certDir, 0o700)
 	if err != nil {
@@ -74,7 +82,12 @@ func main() {
 		return
 	}
 
-	// utils.GenerateCertAndCreate(ns, svc, certDir)
+	certContext, err := utils.GenerateCertAndCreate(ns, common.WebHookName, certDir)
+	if err != nil {
+		setupLog.Error(err, "generate certificate failure")
+		return
+	}
+
 	setupLog.Info("start new manager with get k8s config")
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -104,10 +117,20 @@ func main() {
 	if err = (&controllers.MetaWebHookReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, setupLog); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MetaWebHook")
 		os.Exit(1)
 	}
+
+	if err = (&controllers.MutatingWebhookConfigurationReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr, setupLog, certContext.SigningCert); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "MutatingWebhookConfigurationReconciler")
+		os.Exit(1)
+	}
+
+	// webhook register
 
 	setupLog.Info("start webhook server and register it with SetupWebhookWithManager")
 
@@ -115,6 +138,7 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "MetaWebHook")
 		os.Exit(1)
 	}
+
 	setupLog.Info("finished webhook server and register it with SetupWebhookWithManager")
 	//+kubebuilder:scaffold:builder
 
