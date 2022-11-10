@@ -32,7 +32,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - admissionregistration.k8s.io
+  - admissionregistration.k8s.io 
   resources:
   - mutatingwebhookconfigurations
   verbs:
