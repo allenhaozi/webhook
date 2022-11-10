@@ -64,12 +64,13 @@ func (r *MetaWebHookReconciler) SetupWithManager(mgr ctrl.Manager, l logr.Logger
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&metav1.MetaWebHook{}).
 		Complete(
-			NewMetaWebHookReconciler(l),
+			NewMetaWebHookReconciler(mgr, l),
 		)
 }
 
-func NewMetaWebHookReconciler(l logr.Logger) *MetaWebHookReconciler {
+func NewMetaWebHookReconciler(mrg ctrl.Manager, l logr.Logger) *MetaWebHookReconciler {
 	r := &MetaWebHookReconciler{}
 	r.Log = l
+	r.Client = mrg.GetClient()
 	return r
 }
