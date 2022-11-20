@@ -3,7 +3,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"admissionregistration.k8s.io/v1","kind":"ValidatingWebhookConfiguration","metadata":{"annotations":{},"creationTimestamp":null,"name":"validating-webhook-configuration"},"webhooks":[{"admissionReviewVersions":["v1"],"clientConfig":{"service":{"name":"webhook-service","namespace":"default","path":"/validate-meta-github-com-v1-metawebhook"}},"failurePolicy":"Fail","name":"vmetawebhook.kb.io","rules":[{"apiGroups":["meta.github.com"],"apiVersions":["v1"],"operations":["CREATE","UPDATE"],"resources":["metawebhooks"]}],"sideEffects":"None"}]}
+      {"apiVersion":"admissionregistration.k8s.io/v1","kind":"ValidatingWebhookConfiguration","metadata":{"annotations":{},"creationTimestamp":null,"name":"validating-webhook-configuration"},"webhooks":[{"admissionReviewVersions":["v1"],"clientConfig":{"service":{"name":"mutating-webhook-configuration","namespace":"default","path":"/validate-meta-github-com-v1-metawebhook"}},"failurePolicy":"Fail","name":"vmetawebhook.kb.io","rules":[{"apiGroups":["meta.github.com"],"apiVersions":["v1"],"operations":["CREATE","UPDATE"],"resources":["metawebhooks"]}],"sideEffects":"None"}]}
   creationTimestamp: "2022-11-06T15:06:33Z"
   generation: 1
   name: validating-webhook-configuration
@@ -14,7 +14,7 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: webhook-service
+      name: mutating-webhook-configuration
       namespace: default
       path: /validate-meta-github-com-v1-metawebhook
       port: 443

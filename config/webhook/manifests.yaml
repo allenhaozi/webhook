@@ -25,3 +25,23 @@ webhooks:
     resources:
     - metawebhooks
   sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-v1alpha1-argoworkflow
+  failurePolicy: Fail
+  name: mworkflow.argoproj.io
+  rules:
+  - apiGroups:
+    - argoproj.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - workflows
+  sideEffects: None

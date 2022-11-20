@@ -6,6 +6,32 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfiguration/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfiguration/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - meta.github.com
   resources:
   - metawebhooks
@@ -32,9 +58,9 @@ rules:
   - patch
   - update
 - apiGroups:
-  - admissionregistration.k8s.io 
+  - sparkoperator.k8s.io
   resources:
-  - mutatingwebhookconfigurations
+  - sparkapplications
   verbs:
   - create
   - delete
@@ -43,3 +69,37 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - sparkoperator.k8s.io
+  resources:
+  - sparkapplications/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - workflow.argoproj.io
+  resources:
+  - workflows
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - workflow.argoproj.io
+  resources:
+  - workflows/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - workflow.argoproj.io
+  resources:
+  - workflows/status
+  verbs:
+  - get
+  - patch
+  - update
