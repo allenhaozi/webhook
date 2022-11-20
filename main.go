@@ -28,9 +28,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/allenhaozi/webhook/api/common"
-	metav1 "github.com/allenhaozi/webhook/api/v1"
+	webhookv1 "github.com/allenhaozi/webhook/api/v1"
+	webhookv1alpha1 "github.com/allenhaozi/webhook/api/v1alpha1"
 	"github.com/allenhaozi/webhook/controllers"
 	"github.com/allenhaozi/webhook/pkg/utils"
 )
@@ -43,7 +45,13 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(metav1.AddToScheme(scheme))
+	utilruntime.Must(webhookv1.AddToScheme(scheme))
+	utilruntime.Must(webhookv1alpha1.AddToScheme(scheme))
+
+	// add argoproj workflow
+	// utilruntime.Must(argoworkflowv1alpha1.AddToScheme(scheme))
+	// local dummy workflow
+	utilruntime.Must(webhookv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -134,12 +142,15 @@ func main() {
 
 	setupLog.Info("start webhook server and register it with SetupWebhookWithManager")
 
-	if err = (&metav1.MetaWebHook{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = (&webhookv1.MetaWebHook{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "MetaWebHook")
 		os.Exit(1)
 	}
 
-	setupLog.Info("finished webhook server and register it with SetupWebhookWithManager")
+	hookServer := mgr.GetWebhookServer()
+
+	hookServer.Register("/mutate-v1alpha1-argoworkflow", &webhook.Admission{Handler: &webhookv1alpha1.ArgoWorkflowHandler{Client: mgr.GetClient(), Log: setupLog}})
+
 	//+kubebuilder:scaffold:builder
 
 	setupLog.Info("health check")

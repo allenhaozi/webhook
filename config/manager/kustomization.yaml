@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: allenhaozi/webhook.tar
-  newTag: v0.0.4
+  newTag: v0.0.11

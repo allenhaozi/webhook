@@ -4,11 +4,11 @@ metadata:
   labels:
     app.kubernetes.io/component: webhook
     app.kubernetes.io/created-by: webhook
-    app.kubernetes.io/instance: webhook-service
+    app.kubernetes.io/instance: mutating-webhook-configuration
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: service
     app.kubernetes.io/part-of: webhook
-  name: webhook-service
+  name: mutating-webhook-configuration
   namespace: default
 spec:
   ports:
@@ -28,7 +28,7 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: webhook-service
+      name: mutating-webhook-configuration
       namespace: default
       path: /mutate-meta-github-com-v1-metawebhook
   failurePolicy: Fail
@@ -55,7 +55,7 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: webhook-service
+      name: mutating-webhook-configuration
       namespace: default
       path: /validate-meta-github-com-v1-metawebhook
   failurePolicy: Fail

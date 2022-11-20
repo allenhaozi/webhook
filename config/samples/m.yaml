@@ -15,4 +15,4 @@ spec:
   databaseSchema: "default"
   tableFQN: "naton"
   tableId: "123"
-  
+
