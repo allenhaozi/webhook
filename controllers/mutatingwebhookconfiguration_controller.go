@@ -34,14 +34,16 @@ import (
 // MetaWebHookReconciler reconciles a MetaWebHook object
 type MutatingWebhookConfigurationReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	CaCert []byte
-	Log    logr.Logger
+	Scheme      *runtime.Scheme
+	CertContext *common.CertContext
+	Log         logr.Logger
 }
 
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfiguration/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfiguration/finalizers,verbs=update
+
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
@@ -67,7 +69,7 @@ func (r *MutatingWebhookConfigurationReconciler) patchCaBundle(m *admissionv1.Mu
 
 	current := m.DeepCopy()
 	for i := range m.Webhooks {
-		m.Webhooks[i].ClientConfig.CABundle = r.CaCert
+		m.Webhooks[i].ClientConfig.CABundle = r.CertContext.SigningCert
 	}
 
 	if reflect.DeepEqual(m.Webhooks, current.Webhooks) {
@@ -120,19 +122,19 @@ func updatePredicate(e event.UpdateEvent) bool {
 
 // MutatingWebhookConfiguration
 // SetupWithManager sets up the controller with the Manager.
-func (r *MutatingWebhookConfigurationReconciler) SetupWithManager(mgr ctrl.Manager, l logr.Logger, caCert []byte) error {
+func (r *MutatingWebhookConfigurationReconciler) SetupWithManager(mgr ctrl.Manager, l logr.Logger, certContext *common.CertContext) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&admissionv1.MutatingWebhookConfiguration{}).
 		WithEventFilter(filterByWebhookName).
 		Complete(
-			NewMutatingWebhookConfigurationReconciler(mgr, l, caCert),
+			NewMutatingWebhookConfigurationReconciler(mgr, l, certContext),
 		)
 }
 
-func NewMutatingWebhookConfigurationReconciler(mgr ctrl.Manager, l logr.Logger, caCert []byte) *MutatingWebhookConfigurationReconciler {
+func NewMutatingWebhookConfigurationReconciler(mgr ctrl.Manager, l logr.Logger, certContext *common.CertContext) *MutatingWebhookConfigurationReconciler {
 	r := &MutatingWebhookConfigurationReconciler{}
 	r.Client = mgr.GetClient()
 	r.Log = l
-	r.CaCert = caCert
+	r.CertContext = certContext
 	return r
 }

@@ -7,16 +7,15 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"log"
 	"math"
 	"math/big"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
+
+	"github.com/allenhaozi/webhook/api/common"
 )
 
 var (
@@ -24,52 +23,21 @@ var (
 	CertificateBlockType = "CERTIFICATE"
 )
 
-type CertContext struct {
-	// server.crt
-	Cert []byte
-	// server.key
-	Key        []byte
-	SigningKey []byte
-	// ca.crt
-	SigningCert []byte
-}
-
-func GenerateCertAndCreate(namespaceName, serviceName, certDir string) (*CertContext, error) {
-	certContext := generateCert(namespaceName, serviceName)
-	// ca.crt
-	caCertFile := filepath.Join(certDir, "ca.crt")
-	if err := os.WriteFile(caCertFile, certContext.SigningCert, 0o644); err != nil {
-		return nil, errors.Errorf("Failed to write CA cert %v", err)
-	}
-	// server.key
-	keyFile := filepath.Join(certDir, "tls.key")
-	if err := os.WriteFile(keyFile, certContext.Key, 0o644); err != nil {
-		return nil, errors.Errorf("Failed to write key file %v", err)
-	}
-	// server.csr
-	certFile := filepath.Join(certDir, "tls.crt")
-	if err := os.WriteFile(certFile, certContext.Cert, 0o600); err != nil {
-		return nil, errors.Errorf("Failed to write cert file %v", err)
-	}
-
-	return certContext, nil
-}
-
 // reference: https://github.com/kubernetes/kubernetes/blob/v1.21.1/test/e2e/apimachinery/certs.go.
-func generateCert(namespaceName, serviceName string) *CertContext {
+func GenerateCert(namespaceName, serviceName string) (*common.CertContext, error) {
 	signingKey, err := NewPrivateKey()
 	if err != nil {
-		log.Fatalf("Failed to create CA private key %v", err)
+		return nil, errors.Wrap(err, "Failed to create CA private key")
 	}
 
 	signingCert, err := cert.NewSelfSignedCACert(cert.Config{CommonName: "self-signed-k8s-cert"}, signingKey)
 	if err != nil {
-		log.Fatalf("Failed to create CA cert for apiserver %v", err)
+		return nil, errors.Wrap(err, "Failed to create CA cert for Apiserver")
 	}
 
 	key, err := NewPrivateKey()
 	if err != nil {
-		log.Fatalf("Failed to create private key for %v", err)
+		return nil, errors.Wrap(err, "Failed to create private key")
 	}
 
 	signedCert, err := NewSignedCert(
@@ -83,27 +51,27 @@ func generateCert(namespaceName, serviceName string) *CertContext {
 		signingKey,
 	)
 	if err != nil {
-		log.Fatalf("Failed to create cert%v", err)
+		return nil, errors.Wrap(err, "Failed to create signed certificate")
 	}
 
 	keyPEM, err := keyutil.MarshalPrivateKeyToPEM(key)
 	if err != nil {
-		log.Fatalf("Failed to marshal key %v", err)
+		return nil, errors.Wrap(err, "Failed to marshal private key")
 	}
 
 	signingKeyPEM, err := keyutil.MarshalPrivateKeyToPEM(signingKey)
 	if err != nil {
-		log.Fatalf("Failed to marshal key %v", err)
+		return nil, errors.Wrap(err, "Failed to marshal signed key")
 	}
 
-	c := &CertContext{
+	c := &common.CertContext{
 		Cert:        EncodeCertPEM(signedCert),
 		Key:         keyPEM,
 		SigningCert: EncodeCertPEM(signingCert),
 		SigningKey:  signingKeyPEM,
 	}
 
-	return c
+	return c, nil
 }
 
 // NewSignedCert creates a signed certificate using the given CA certificate and key
