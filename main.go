@@ -20,7 +20,6 @@ import (
 	"flag"
 	"os"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -30,11 +29,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/allenhaozi/webhook/api/common"
 	webhookv1 "github.com/allenhaozi/webhook/api/v1"
 	webhookv1alpha1 "github.com/allenhaozi/webhook/api/v1alpha1"
 	"github.com/allenhaozi/webhook/controllers"
-	"github.com/allenhaozi/webhook/pkg/utils"
 )
 
 var (
@@ -60,7 +57,9 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var certDir string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&certDir, "cert-dir", "/tmp/k8s-webhook-server/serving-certs", "webhook certificate.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
@@ -72,29 +71,6 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
-	ns := ""
-	if v, ok := os.LookupEnv(common.MyPodNamespace); ok {
-		ns = v
-	} else {
-		err := errors.Errorf("can not get %s environment variable", common.MyPodNamespace)
-		setupLog.Error(err, "get environment failure")
-		return
-	}
-
-	certDir := "/tmp/cert-dir"
-
-	err := os.MkdirAll(certDir, 0o700)
-	if err != nil {
-		setupLog.Error(err, "mkdir certificate failure")
-		return
-	}
-
-	certContext, err := utils.GenerateCertAndCreate(ns, common.WebHookName, certDir)
-	if err != nil {
-		setupLog.Error(err, "generate certificate failure")
-		return
-	}
 
 	setupLog.Info("start new manager with get k8s config")
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -133,7 +109,7 @@ func main() {
 	if err = (&controllers.MutatingWebhookConfigurationReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr, setupLog, certContext.SigningCert); err != nil {
+	}).SetupWithManager(mgr, setupLog, certDir); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MutatingWebhookConfigurationReconciler")
 		os.Exit(1)
 	}

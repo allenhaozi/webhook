@@ -4,11 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
+	"os"
 	"text/template"
 
 	argoworkflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/go-logr/logr"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/cli"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -76,4 +81,54 @@ func (a *ArgoWorkflowHandler) process(manifest string) string {
 func (a *ArgoWorkflowHandler) InjectDecoder(d *admission.Decoder) error {
 	a.decoder = d
 	return nil
+}
+
+func test() {
+	chartPath := "/mypath"
+	namespace := "default"
+	releaseName := "myrelease"
+
+	settings := cli.New()
+
+	actionConfig := new(action.Configuration)
+	// You can pass an empty string instead of settings.Namespace() to list
+	// all namespaces
+	if err := actionConfig.Init(settings.RESTClientGetter(), namespace,
+		os.Getenv("HELM_DRIVER"), log.Printf); err != nil {
+		log.Printf("%+v", err)
+		os.Exit(1)
+	}
+
+	// define values
+	vals := map[string]interface{}{
+		"redis": map[string]interface{}{
+			"sentinel": map[string]interface{}{
+				"masterName": "BigMaster",
+				"pass":       "random",
+				"addr":       "localhost",
+				"port":       "26379",
+			},
+		},
+	}
+
+	// load chart from the path
+	chart, err := loader.Load(chartPath)
+	if err != nil {
+		panic(err)
+	}
+
+	client := action.NewInstall(actionConfig)
+	client.Namespace = namespace
+	client.ReleaseName = releaseName
+	// client.DryRun = true - very handy!
+
+	// install the chart here
+	rel, err := client.Run(chart, vals)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Printf("Installed Chart from path: %s in namespace: %s\n", rel.Name, rel.Namespace)
+	// this will confirm the values set during installation
+	log.Println(rel.Config)
 }
