@@ -1,0 +1,75 @@
+apiVersion: openaios.4pd.io/v1alpha1
+kind: OperatorDefinition
+metadata:
+  annotations:
+  labels:
+    app.kubernetes.io/name: salesforecast
+    app.kubernetes.io/version: v0.0.1
+    app.kubernetes.io/component: openaios  
+  name: salesforecast
+spec:
+  inputs:
+  - name: "input-01"
+    resourceType: "table"
+    tableType: "iceberg"
+    conditions:
+      - name: "date"
+        value: "date = 2022-11-23"
+    meta:
+      id: ""
+      name: "hcml_lite.bo_sku"
+      path: "/metaxis-6666/warehouse/hcml_lite/bo_sku"
+      warehouse: "/metaxis-6666/warehouse"
+      columns:
+      - name: "batch100000_flatten_request_eveTime_original_0"
+        dataType: "TIMESTAMP"
+      - name: "hypcId_3"
+        dataType: "STRING"
+      - name: "action_label_multi_direct_2"
+        dataType: "INT" 
+  - name: "input-02"
+    resourceType: "table"
+    tableType: "csv"
+    meta:
+      id: ""
+      name: "hcml_lite.sku_basic"
+      path: "/metaxis-6666/warehouse/hcml_lite/sku_basic"
+      warehouse: "/metaxis-6666/warehouse"
+      columns:
+      - name: "sku_id"
+        dataType: "INT"
+      - name: "cate_id"
+        dataType: "STRING"
+      - name: "sku_weight"
+        dataType: "FLOAT"
+  outputs:
+  - name: "output-sku-model"
+    resourceType: "model"
+    meta:
+      id: ""
+      name: "sku_model"
+      path: "/metaxis-6666/locations/e2f701c2-a94b-4df9-84d2-bf99291d7016/output-sku-model"
+  params:
+    run_conf:
+      "data_date": "2022-08-01"
+      "run_date": "2022-08-01"
+      "target_freq": "W"
+      "future_freq": "13"
+      "model": "predict"
+runtimeConfig:
+  image: 
+    repository: gcr.io/spark-operator/spark-py
+    tag: v3.1.1
+  driver:
+    cores: 1
+    coreLimit: "1200m"
+    memory: "512m"
+    labels:
+      version: 3.1.1
+    serviceAccount: spark
+  executor:
+    cores: 1
+    instances: 1
+    memory: "512m"
+    labels:
+      version: 3.1.1
