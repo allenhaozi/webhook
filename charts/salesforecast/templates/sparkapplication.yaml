@@ -1,0 +1,37 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+   generateName: spark-load-naton-day-data-
+spec:
+  arguments:
+  - '--inputs'
+  - '{{ toJson .Values.spec.inputs }}'
+  - '--outputs'
+  - '{{ toJson .Values.spec.outputs }}'
+  - '--params'
+  - '{{ toJson .Values.spec.params }}'
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: {{ .Values.runtimeConfig.image.repository }}:{{ .Values.runtimeConfig.image.tag }}
+  imagePullPolicy: Always
+  mainApplicationFile: local:///opt/spark/examples/src/main/python/pi.py
+  sparkVersion: "3.1.1"
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 10
+    onSubmissionFailureRetries: 5
+    onSubmissionFailureRetryInterval: 20
+  {{- with .Values.sparkConfiguration }}
+  sparkConf:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.runtimeConfig.driver }}
+  driver:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.runtimeConfig.executor }}
+  executor:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

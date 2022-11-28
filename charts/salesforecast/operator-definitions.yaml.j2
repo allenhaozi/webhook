@@ -1,0 +1,142 @@
+/**
+OpenAIOS OperatorDefinition
+*/
+apiVersion: openaios.4pd.io/v1alpha1
+kind: OperatorDefinition
+metadata:
+  annotations:
+  labels:
+    app.kubernetes.io/name: salesforecast
+    app.kubernetes.io/version: v0.0.1
+    app.kubernetes.io/component: openaios  
+  name: salesforecast-{{ instance_name }} 
+spec:
+  inputs:
+  - name: inputs-01
+    description: "salesforecast input table"
+    resourceType: table
+    tableType: iceberg
+    kedroDatasetType: "kedro.openaios.ext.datasets.Iceberg"
+    conditions:
+    - name: date
+      value: {{ inputs.inputs-01.conditions.date.value }}
+    meta:
+      id:{{ inputs.inputs-01.meta.name }} # BU set this value when finished creating metadata / Ignore this value when developing locally
+      name:{{ inputs.inputs-01.meta.name }} # operatordefinition controller set this value by id(metadata sdk will be used) / When developing locally, users fill in their own
+      path: {{ inputs.inputs-01.meta.path}} # operatordefinition controller set this value by id(metadata sdk will be used) / When developing locally, users fill in their own
+      warehouse: {{ inputs.inputs-01.meta.warehouse }} # operatordefinition controller set this value by id(metadata sdk will be used) / When developing locally, users fill in their own
+      schemas:
+        columns: {{ inputs.inputs-01.meta.columns }} # operatordefinition controller set this value by id(metadata sdk will be used) / When developing locally, users fill in their own
+  {% for item in dynamic.inputs %}
+  - name: {{ item.name }}
+    resourceType: table
+    tableType: csv
+    conditions:
+    {% for cond in item.conditions %}
+    - name: {{ cond.name }}
+      value: {{ cond.value }}
+    {% endfor %}
+    meta:
+      id: {{ item.meta.id }}
+      name: {{ item.meta.name }}
+      path: {{ item.meta.path}}
+      warehouse: {{ item.meta.warehouse }}
+      schemas: 
+        columns: {{ item.meta.schemas.columns }}
+  {% endfor %}
+  outputs:     
+  - name: "output-sku-model"
+    resourceType: model
+    meta:
+      id: {{ outputs.outputs-sku-model.id }} 
+      name: {{ outputs.outputs-sku-model.name }} 
+ 
+  params:
+  - name: run_conf
+    manifest: |
+        {
+           "data_date": "{{ params.run_conf.data_date }}",
+           "future_freq": "{{ params.run_conf.future_freq }}",
+           "model": "{{ params.run_conf.model }}",
+           "run_date": "{{ params.run_conf.run_date }}",
+           "target_freq": {{ params.run_conf.target_freq }}
+        }
+  - name: date_date
+    value: {{ params.data_date }}
+  - name: future_freq
+    value: {{ params.future_freq }}
+  - name: my_pod_name
+    value: !ENV ${MY_POD_NAME}
+  - name: spark_conf
+    items: 
+    - name: spark.driver.maxResultSize
+      value: 0 
+    - name: spark.kubernetes.kerberos.krb5.path
+      value: "/etc/hadoop/krb5/krb5.conf"
+credentials:  # operatordefinition controller set this value by id(metadata sdk will be used) / When developing locally, developer fill in
+  s3: 
+  - name: "s3-default"
+    endpoint: ""
+    accessKey: ""
+    secretKey: ""
+  hdfs:
+  - name: "hdfs-default"
+    hadoopConfigurationDir: "/opt/spark/etc/hdfs-default" 
+    kerberosConfigurationDir: "/opt/spark/etc/kerberos-default" 
+    hadoopUserName: "hcml-lite"
+    hadoopConfiguration: 
+      core-site.xml: ""
+      hdfs-site.xml: ""
+    kerberosConfiguration:
+      principal: ""
+      keytab: ""
+      krb5.conf: ""
+sparkConfiguration:
+  spark.sql.extensions: org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions  
+runtimeConfig: # The developer defines an open parameter for its OperatorExecutorTemplate, BU is responsible for rendering it / When developing locally, developer fill in
+  image:
+    repository: {{ run_conf.image.repository }} 
+    tag: {{ run_conf.image.tag }}
+  driver:
+    coreLimit: "{{ run_conf.driver.coreLimit }}"
+      cores: 8
+      {% for key, env in run_conf.driver.env.items -%}
+      env:
+        - name: {{ env.name }}
+          value: {{ env.value }}
+      {% endfor %}
+      labels:
+        version: 3.1.1
+      memory: 10000M
+      serviceAccount: {{ run_conf.driver.serviceAccount }}
+    executor:
+      {% for key, env in run_conf.driver.env.items -%}
+      env:
+        - name: {{ env.name }}
+          value: {{ env.value }}
+      {% endfor %}
+      cores: 12
+      instances: 3
+      labels:
+        version: 3.1.1
+      memory: {{ run_conf.executor.memory | default("1000Mi") }}
+      image: {{ run_conf.executor.image }}
+      imagePullPolicy: {{ run_conf.executor.imagePullPolicy }}
+      {%if run_conf.imagePullSecrets %}
+      imagePullSecrets:
+      {% for secret in run_conf.imagePullSecrets %}
+        - {{ secret.value }}
+      {% endif %}
+      mainApplicationFile: local:///home/ailake/work/src/LoadNatonDayData.py
+      mode: cluster
+      {% if run_conf.nodeSelector %}
+      nodeSelector:
+        {% for nodeSelector in run_conf.nodeSelectors %}
+          {{ nodeSelector.name }}:{{ nodeSelector.value }}
+        {% endfor %}
+      pythonVersion: '3'
+      restartPolicy:
+        type: Never
+      sparkVersion: 3.2.1
+      type: Python
+      
